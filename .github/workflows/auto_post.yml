@@ -2,8 +2,9 @@ name: Auto Post Shorts Every 3 Hours
 
 on:
   schedule:
+    # Har 3 ghante me automatic chalne ke liye
     - cron: '0 */3 * * *'
-  workflow_dispatch:
+  workflow_dispatch: # Manual run karne ke liye
 
 jobs:
   build-and-run:
@@ -18,11 +19,9 @@ jobs:
       with:
         python-version: '3.10'
 
-    # Apt-get se FFmpeg installation (non-interactive mode ke saath)
-    - name: Install FFmpeg
-      run: |
-        sudo apt-get update -y
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ffmpeg
+    # Fast FFmpeg Installation (Bina apt-get ke, 5 sec me setup)
+    - name: Setup FFmpeg
+      uses: FedericoCarboni/setup-ffmpeg@v2
 
     - name: Install Python Dependencies
       run: |
