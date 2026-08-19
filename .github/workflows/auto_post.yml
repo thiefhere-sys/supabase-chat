@@ -2,11 +2,12 @@ name: Auto Post Shorts Every 3 Hours
 
 on:
   schedule:
+    # Har 3 ghante me automatic chalne ke liye
     - cron: '0 */3 * * *'
-  workflow_dispatch:
+  workflow_dispatch: # Manual run karne ke liye
 
 jobs:
-  run-script:
+  build-and-run:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,18 +19,19 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Install FFmpeg
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y ffmpeg
+    # FFmpeg Installation (Bina kisi interactive prompt ke atke fast install hoga)
+    - name: Setup FFmpeg
+      uses: FedericoCarboni/setup-ffmpeg@v2
 
     - name: Install Python Dependencies
       run: |
-        pip install -r requirements.txt
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
     - name: Run Auto Post Script
       env:
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      run: python main.py
-
+        # Yahan aap apne Github Actions Secrets paas kar sakte hain
+        BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        CHAT_ID: ${{ secrets.CHAT_ID }}
+      run: |
+        python bot.py
