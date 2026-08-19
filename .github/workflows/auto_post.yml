@@ -2,9 +2,8 @@ name: Auto Post Shorts Every 3 Hours
 
 on:
   schedule:
-    # Har 3 ghante me automatic chalne ke liye
     - cron: '0 */3 * * *'
-  workflow_dispatch: # Manual run karne ke liye
+  workflow_dispatch:
 
 jobs:
   build-and-run:
@@ -19,9 +18,11 @@ jobs:
       with:
         python-version: '3.10'
 
-    # FFmpeg Installation (Bina kisi interactive prompt ke atke fast install hoga)
-    - name: Setup FFmpeg
-      uses: FedericoCarboni/setup-ffmpeg@v2
+    # Apt-get se FFmpeg installation (non-interactive mode ke saath)
+    - name: Install FFmpeg
+      run: |
+        sudo apt-get update -y
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ffmpeg
 
     - name: Install Python Dependencies
       run: |
@@ -30,8 +31,7 @@ jobs:
 
     - name: Run Auto Post Script
       env:
-        # Yahan aap apne Github Actions Secrets paas kar sakte hain
         BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         CHAT_ID: ${{ secrets.CHAT_ID }}
       run: |
-        python bot.py
+        python main.py
