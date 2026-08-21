@@ -69,9 +69,12 @@ def send_video_to_telegram(video_path):
     print("📤 Telegram channel par upload ho raha hai...")
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendVideo"
     
+    # Yaha caption me hashtags add kar diye gaye hain
+    caption_text = "🔥 New Viral Short!\n\n#shorts #viral #trending #funny #memes"
+    
     try:
         with open(video_path, 'rb') as video_file:
-            payload = {'chat_id': TARGET_CHAT_ID, 'caption': '🔥 New Viral Short!'}
+            payload = {'chat_id': TARGET_CHAT_ID, 'caption': caption_text}
             files = {'video': video_file}
             res = requests.post(url, data=payload, files=files, timeout=60)
             
