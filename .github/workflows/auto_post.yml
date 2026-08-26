@@ -3,7 +3,10 @@ name: Telegram Video Auto Poster
 on:
   workflow_dispatch: # GitHub web UI se manually run karne ke liye
   schedule:
-    - cron: '0 */6 * * *' # Har 6 ghante me auto run hoga (aap timing change kar sakte hain)
+    - cron: '0 */6 * * *' # Har 6 ghante me auto run hoga
+
+permissions:
+  contents: write # Git push permission grant karta hai
 
 jobs:
   build-and-run:
@@ -34,3 +37,10 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python main.py
 
+      # Dynamic history file save karne ke liye Commit and Push Step
+      - name: Save Uploaded History
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add uploaded_urls.txt || true
+          git diff-index --quiet HEAD || (git commit -m "Update uploaded video history [skip ci]" && git push)
