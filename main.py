@@ -10,7 +10,11 @@ TELEGRAM_CHANNELS = [
     "Funny_Videos_Gifs",
     "memes",
     "viral_videos_channel",
-    "funny_shorts_hd"
+    "funny_shorts_hd",
+    "humor_memes",
+    "laughing_videos",
+    "short_funny_clips",
+    "fun_zone_memes"
 ]
 
 OUTPUT_VIDEO = "single_viral_short.mp4"
