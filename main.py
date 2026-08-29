@@ -24,18 +24,22 @@ HISTORY_FILE = "uploaded_urls.txt"
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TARGET_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
+
 def get_uploaded_history():
-    """Pehle se uploaded video URLs ki list load karta hai"""
+    """History file se bina token wale clean URLs load karta hai"""
     if os.path.exists(HISTORY_FILE):
         with open(HISTORY_FILE, "r") as f:
-            return set(line.strip() for line in f if line.strip())
+            # Har line ka token hata kar set banayein
+            return set(line.strip().split('?')[0] for line in f if line.strip())
     return set()
+
 
 def save_to_history(video_url):
     """Token ke bina clean URL ko history file me save karta hai"""
-    clean_url = video_url.split('?')[0] # ?token... hata kar sirf main URL save karega
+    clean_url = video_url.split('?')[0]
     with open(HISTORY_FILE, "a") as f:
         f.write(clean_url + "\n")
+
 
 def process_to_916_fast(input_file, output_file):
     """FFmpeg ka use karke video ko 9:16 vertical format me convert karta hai"""
@@ -51,6 +55,7 @@ def process_to_916_fast(input_file, output_file):
     result = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return result.returncode == 0
 
+
 def get_telegram_funny_video():
     """Telegram web preview se unseen/fresh video URL scrape karta hai"""
     history = get_uploaded_history()
@@ -59,6 +64,7 @@ def get_telegram_funny_video():
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
 
     for channel in channels:
+        # Offset fix: 2001 ko 200 kar diya gaya hai
         offset = random.choice([0, 20, 50, 100, 150, 200])
         url = f"https://t.me/s/{channel}?before={offset}" if offset > 0 else f"https://t.me/s/{channel}"
 
@@ -73,10 +79,10 @@ def get_telegram_funny_video():
                 for v in video_tags:
                     src = v.get('src')
                     if src:
-                        # Clean URL: ?token=... waala hissa hata do
+                        # URL se ?token=... wala part hata kar check karein
                         clean_url = src.split('?')[0]
                         if clean_url not in history:
-                            video_urls.append(src) # Pure download URL rakhein
+                            video_urls.append(src)
 
                 if video_urls:
                     selected_url = random.choice(video_urls)
@@ -91,22 +97,23 @@ def get_telegram_funny_video():
     print("⚠️ Sabhi channels ki videos duplicate hain ya nahi mili.")
     return None
 
+
 def send_video_to_telegram(video_path):
-    """Processed video ko Telegram Bot API se channel me send karta hai"""
+    """Processed video ko Telegram Bot API se send karta hai"""
     if not BOT_TOKEN or not TARGET_CHAT_ID:
-        print("❌ Error: TELEGRAM_BOT_TOKEN ya TELEGRAM_CHAT_ID env variables miss hain!")
+        print("❌ Error: TELEGRAM_BOT_TOKEN ya TELEGRAM_CHAT_ID missing hai!")
         return False
 
     print("📤 Telegram channel par upload ho raha hai...")
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendVideo"
     caption_text = "🔥 New Viral Short!\n\n#shorts #viral #trending #funny #memes"
-    
+
     try:
         with open(video_path, 'rb') as video_file:
             payload = {'chat_id': TARGET_CHAT_ID, 'caption': caption_text}
             files = {'video': video_file}
             res = requests.post(url, data=payload, files=files, timeout=60)
-            
+
         if res.status_code == 200:
             print("✅ Telegram par successfully upload ho gaya!")
             return True
@@ -117,8 +124,10 @@ def send_video_to_telegram(video_path):
         print(f"❌ Telegram upload me exception aaya: {e}")
         return False
 
+
 def main():
     video_url = get_telegram_funny_video()
+
     if not video_url:
         print("⏭️ Upload skipped: Koi nayi video available nahi thi.")
         return
@@ -128,28 +137,34 @@ def main():
         r = requests.get(video_url, headers={'User-Agent': 'Mozilla/5.0'}, stream=True, timeout=30)
         if r.status_code == 200:
             with open(RAW_FILE, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=1024*1024):
+                for chunk in r.iter_content(chunk_size=1024 * 1024):
                     if chunk:
                         f.write(chunk)
 
             if os.path.exists(RAW_FILE) and os.path.getsize(RAW_FILE) > 0:
                 print("⚡ 9:16 vertical video me convert ho raha hai...")
                 success = process_to_916_fast(RAW_FILE, OUTPUT_VIDEO)
-                
+
                 if success and os.path.exists(OUTPUT_VIDEO):
                     uploaded = send_video_to_telegram(OUTPUT_VIDEO)
                     if uploaded:
                         save_to_history(video_url)
                 else:
                     print("❌ FFmpeg video process karne me fail ho gaya.")
+            else:
+                print("❌ Downloaded file empty hai.")
+        else:
+            print(f"❌ Download failed (HTTP Status: {r.status_code})")
 
     except Exception as e:
-        print(f"❌ Video download/process karne me error aaya: {e}")
+        print(f"❌ Error aaya: {e}")
     finally:
         if os.path.exists(OUTPUT_VIDEO):
             os.remove(OUTPUT_VIDEO)
         if os.path.exists(RAW_FILE):
             os.remove(RAW_FILE)
 
+
 if __name__ == "__main__":
     main()
+
