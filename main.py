@@ -58,29 +58,35 @@ def get_telegram_funny_video():
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
 
     for channel in channels:
-        url = f"https://t.me/s/{channel}"
+        offset = random.choice([0, 20, 50, 100, 150, 200])
+        url = f"https://t.me/s/{channel}?before={offset}" if offset > 0 else f"https://t.me/s/{channel}"
+
+        print(f"🔍 Searching @{channel} (offset: {offset})...")
         try:
             res = requests.get(url, headers=headers, timeout=10)
             if res.status_code == 200:
                 soup = BeautifulSoup(res.text, 'html.parser')
                 video_tags = soup.find_all('video')
-                
-                # Filter out URLs jo pehle hi history file me exist karte hain
-                video_urls = [
-                    v.get('src') for v in video_tags 
-                    if v.get('src') and v.get('src') not in history
-                ]
+
+                video_urls = []
+                for v in video_tags:
+                    src = v.get('src')
+                    if src:
+                        # Clean URL: ?token=... waala hissa hata do
+                        clean_url = src.split('?')[0]
+                        if clean_url not in history:
+                            video_urls.append(src) # Pure download URL rakhein
 
                 if video_urls:
                     selected_url = random.choice(video_urls)
-                    print(f"✅ Fresh Video mil gayi ({channel}): {selected_url[:30]}...")
+                    print(f"✅ Fresh Video mil gayi (@{channel}): {selected_url.split('?')[0]}...")
                     return selected_url
                 else:
-                    print(f"⚠️ Channel {channel} par koi new/unseen video nahi mili.")
+                    print(f"⚠️ Channel @{channel} par koi unseen video nahi mili.")
         except Exception as e:
-            print(f"⚠️ Channel {channel} scrape karne me error: {e}")
+            print(f"⚠️ Channel @{channel} scrape karne me error: {e}")
             continue
-            
+
     print("⚠️ Sabhi channels ki videos duplicate hain ya nahi mili.")
     return None
 
