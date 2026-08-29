@@ -32,9 +32,10 @@ def get_uploaded_history():
     return set()
 
 def save_to_history(video_url):
-    """Naye uploaded video URL ko history file me add karta hai"""
+    """Token ke bina clean URL ko history file me save karta hai"""
+    clean_url = video_url.split('?')[0] # ?token... hata kar sirf main URL save karega
     with open(HISTORY_FILE, "a") as f:
-        f.write(video_url + "\n")
+        f.write(clean_url + "\n")
 
 def process_to_916_fast(input_file, output_file):
     """FFmpeg ka use karke video ko 9:16 vertical format me convert karta hai"""
