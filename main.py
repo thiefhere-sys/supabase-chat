@@ -17,9 +17,9 @@ TELEGRAM_CHANNELS = [
     "short_funny_clips",
     "fun_zone_memes",
     # Naye channels niche jore gaye hain:
-    "AapkaNayaChannel1",
-    "AapkaNayaChannel2",
-    "ComedyClipsHub",
+    "memes_comedy",
+    "funny1",
+    "funny_humors",
     "DesiMemesOfficial"
 ]
 
