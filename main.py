@@ -4,6 +4,7 @@ import requests
 import subprocess
 from bs4 import BeautifulSoup
 
+# Yahan aap apne pasand ke aur bhi Telegram channels add kar sakte hain
 TELEGRAM_CHANNELS = [
     "Funcology",
     "funny_videos_memes",
@@ -14,7 +15,12 @@ TELEGRAM_CHANNELS = [
     "humor_memes",
     "laughing_videos",
     "short_funny_clips",
-    "fun_zone_memes"
+    "fun_zone_memes",
+    # Naye channels niche jore gaye hain:
+    "AapkaNayaChannel1",
+    "AapkaNayaChannel2",
+    "ComedyClipsHub",
+    "DesiMemesOfficial"
 ]
 
 OUTPUT_VIDEO = "single_viral_short.mp4"
@@ -167,4 +173,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
