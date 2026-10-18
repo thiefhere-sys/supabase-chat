@@ -45,18 +45,21 @@ def save_to_history(video_url):
 
 
 def process_to_916_fast(input_file, output_file):
-    """FFmpeg ka use karke video ko 9:16 vertical format me convert karta hai aur audio safe rakhta hai"""
+    """FFmpeg se video ko 9:16 me convert karta hai aur size compress karta hai taaki 413 error na aaye"""
     cmd = [
         "ffmpeg", "-y",
         "-i", input_file,
         "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",
         "-c:v", "libx264",
         "-preset", "ultrafast",
-        "-c:a", "copy",
+        "-crf", "28",  # Video compression ke liye taaki file size chhota rahe
+        "-c:a", "aac",
+        "-b:a", "128k",
         output_file
     ]
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    
+    return result.returncode == 0
+
     # Agar audio direct copy karne me issue aaye, toh aac encoding fallback use karein
     if result.returncode != 0:
         cmd_fallback = [
