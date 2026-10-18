@@ -4,7 +4,6 @@ import requests
 import subprocess
 from bs4 import BeautifulSoup
 
-# Yahan aap apne pasand ke aur bhi Telegram channels add kar sakte hain
 TELEGRAM_CHANNELS = [
     "Funcology",
     "funny_videos_memes",
@@ -16,7 +15,6 @@ TELEGRAM_CHANNELS = [
     "laughing_videos",
     "short_funny_clips",
     "fun_zone_memes",
-    # Naye channels niche jore gaye hain:
     "memes_comedy",
     "funny1",
     "funny_humors",
@@ -35,7 +33,6 @@ def get_uploaded_history():
     """History file se bina token wale clean URLs load karta hai"""
     if os.path.exists(HISTORY_FILE):
         with open(HISTORY_FILE, "r") as f:
-            # Har line ka token hata kar set banayein
             return set(line.strip().split('?')[0] for line in f if line.strip())
     return set()
 
@@ -48,18 +45,33 @@ def save_to_history(video_url):
 
 
 def process_to_916_fast(input_file, output_file):
-    """FFmpeg ka use karke video ko 9:16 vertical format me convert karta hai"""
+    """FFmpeg ka use karke video ko 9:16 vertical format me convert karta hai aur audio safe rakhta hai"""
     cmd = [
         "ffmpeg", "-y",
         "-i", input_file,
         "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",
         "-c:v", "libx264",
         "-preset", "ultrafast",
-        "-c:a", "aac",
+        "-c:a", "copy",
         output_file
     ]
-    result = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    return result.returncode == 0
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    
+    # Agar audio direct copy karne me issue aaye, toh aac encoding fallback use karein
+    if result.returncode != 0:
+        cmd_fallback = [
+            "ffmpeg", "-y",
+            "-i", input_file,
+            "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",
+            "-c:v", "libx264",
+            "-preset", "ultrafast",
+            "-c:a", "aac",
+            output_file
+        ]
+        result_fallback = subprocess.run(cmd_fallback, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return result_fallback.returncode == 0
+    
+    return True
 
 
 def get_telegram_funny_video():
@@ -70,7 +82,6 @@ def get_telegram_funny_video():
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
 
     for channel in channels:
-        # Offset fix: 2001 ko 200 kar diya gaya hai
         offset = random.choice([0, 20, 50, 100, 150, 200])
         url = f"https://t.me/s/{channel}?before={offset}" if offset > 0 else f"https://t.me/s/{channel}"
 
@@ -85,7 +96,6 @@ def get_telegram_funny_video():
                 for v in video_tags:
                     src = v.get('src')
                     if src:
-                        # URL se ?token=... wala part hata kar check karein
                         clean_url = src.split('?')[0]
                         if clean_url not in history:
                             video_urls.append(src)
@@ -148,7 +158,7 @@ def main():
                         f.write(chunk)
 
             if os.path.exists(RAW_FILE) and os.path.getsize(RAW_FILE) > 0:
-                print("⚡ 9:16 vertical video me convert ho raha hai...")
+                print("⚡ 9:16 vertical video me convert ho raha hai (Audio safe ke sath)...")
                 success = process_to_916_fast(RAW_FILE, OUTPUT_VIDEO)
 
                 if success and os.path.exists(OUTPUT_VIDEO):
@@ -166,9 +176,9 @@ def main():
         print(f"❌ Error aaya: {e}")
     finally:
         if os.path.exists(OUTPUT_VIDEO):
-            os.remove(OUTPUT_VIDEO)
+            os.path.exists(OUTPUT_VIDEO) and os.remove(OUTPUT_VIDEO)
         if os.path.exists(RAW_FILE):
-            os.remove(RAW_FILE)
+            os.path.exists(RAW_FILE) and os.remove(RAW_FILE)
 
 
 if __name__ == "__main__":
