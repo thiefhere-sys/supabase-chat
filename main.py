@@ -44,36 +44,44 @@ def save_to_history(video_url):
         f.write(clean_url + "\n")
 
 
+def has_audio(input_file):
+    """FFprobe ka use karke check karta hai ki video file me audio stream hai ya nahi"""
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-select_streams", "a:0",
+        "-show_entries", "stream=codec_type",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        input_file
+    ]
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    return "audio" in result.stdout
+
+
 def process_to_916_fast(input_file, output_file):
-    """FFmpeg se video ko 9:16 me convert karta hai aur size compress karta hai taaki 413 error na aaye"""
+    """Sirf tabhi process karega jab video me sound/audio hoga, aur size compress karega taaki 413 error na aaye"""
+    
+    # Pehle check karein ki downloaded raw video me audio hai ya nahi
+    if not has_audio(input_file):
+        print("🔇 Is video me sound/audio nahi hai, isliye ise skip kiya ja raha hai.")
+        return False
+
     cmd = [
         "ffmpeg", "-y",
         "-i", input_file,
         "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",
         "-c:v", "libx264",
         "-preset", "ultrafast",
-        "-crf", "28",  # Video compression ke liye taaki file size chhota rahe
+        "-crf", "28",  # Size chhota rakhne ke liye compression
         "-c:a", "aac",
         "-b:a", "128k",
         output_file
     ]
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    return result.returncode == 0
-
-    # Agar audio direct copy karne me issue aaye, toh aac encoding fallback use karein
-    if result.returncode != 0:
-        cmd_fallback = [
-            "ffmpeg", "-y",
-            "-i", input_file,
-            "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",
-            "-c:v", "libx264",
-            "-preset", "ultrafast",
-            "-c:a", "aac",
-            output_file
-        ]
-        result_fallback = subprocess.run(cmd_fallback, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        return result_fallback.returncode == 0
     
+    if result.returncode != 0:
+        print("❌ FFmpeg processing error aayi.")
+        return False
+        
     return True
 
 
@@ -161,7 +169,7 @@ def main():
                         f.write(chunk)
 
             if os.path.exists(RAW_FILE) and os.path.getsize(RAW_FILE) > 0:
-                print("⚡ 9:16 vertical video me convert ho raha hai (Audio safe ke sath)...")
+                print("⚡ Sound check aur 9:16 vertical video conversion ho raha hai...")
                 success = process_to_916_fast(RAW_FILE, OUTPUT_VIDEO)
 
                 if success and os.path.exists(OUTPUT_VIDEO):
@@ -169,7 +177,9 @@ def main():
                     if uploaded:
                         save_to_history(video_url)
                 else:
-                    print("❌ FFmpeg video process karne me fail ho gaya.")
+                    print("❌ Video me sound nahi tha ya FFmpeg processing fail ho gayi, isliye skip kar diya gaya.")
+                    # Chahe sound na ho, par URL ko history me daal dein taaki script baar-baar usi be-awaaz video par na atke
+                    save_to_history(video_url)
             else:
                 print("❌ Downloaded file empty hai.")
         else:
